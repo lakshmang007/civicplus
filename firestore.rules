@@ -1,0 +1,92 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // --- Users ---
+    function isValidUser(data) {
+      return data.uid is string && 
+             data.email is string && 
+             data.createdAt is timestamp &&
+             (data.keys().hasAll(['uid', 'email', 'createdAt'])) &&
+             data.keys().size() <= 10;
+    }
+
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow create: if isOwner(userId) && isValidUser(incoming());
+      allow update: if isOwner(userId) && 
+                      incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL', 'language']) &&
+                      isValidUser(incoming());
+    }
+
+    // --- Authorities ---
+    match /authorities/{authorityId} {
+      allow read: if isSignedIn();
+      // Admin only creation/deletion (simulated for now by denying client-side write)
+      allow write: if false;
+    }
+
+    // --- Reports ---
+    function isValidReport(data) {
+      return data.title is string && data.title.size() <= 200 &&
+             data.description is string && data.description.size() <= 5000 &&
+             data.creatorId == request.auth.uid &&
+             data.status in ['open', 'verified', 'escalated', 'resolved'] &&
+             data.createdAt == request.time &&
+             (data.keys().hasAll(['title', 'description', 'creatorId', 'status', 'createdAt'])) &&
+             data.keys().size() <= 15;
+    }
+
+    match /reports/{reportId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidReport(incoming());
+      allow update: if isSignedIn() && (
+        // Action: Support
+        (incoming().diff(existing()).affectedKeys().hasOnly(['supportsCount']) && 
+         incoming().supportsCount == existing().supportsCount + 1) ||
+        // Action: Status Update (Only if owner for now, or if it hit support threshold - simplified)
+        (isOwner(existing().creatorId) && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt']) && incoming().updatedAt == request.time)
+      );
+      allow delete: if isOwner(existing().creatorId);
+    }
+
+    // --- Supports ---
+    function isValidSupport(data) {
+      return data.userId == request.auth.uid &&
+             data.reportId is string &&
+             data.createdAt == request.time;
+    }
+
+    match /reports/{reportId}/supports/{supportId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidSupport(incoming());
+      allow delete: if isOwner(existing().userId);
+    }
+  }
+}

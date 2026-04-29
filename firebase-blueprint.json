@@ -1,0 +1,88 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile and preferences",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "displayName": { "type": "string" },
+        "email": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "language": { "type": "string", "enum": ["en", "hi", "kn", "te", "ta"] }
+      },
+      "required": ["uid", "email", "createdAt"]
+    },
+    "Report": {
+      "title": "Report",
+      "description": "Community issue report",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "location": {
+          "type": "object",
+          "properties": {
+            "latitude": { "type": "number" },
+            "longitude": { "type": "number" },
+            "address": { "type": "string" }
+          }
+        },
+        "mediaUrl": { "type": "string" },
+        "status": { "type": "string", "enum": ["open", "verified", "escalated", "resolved"] },
+        "category": { "type": "string" },
+        "supportsCount": { "type": "number" },
+        "creatorId": { "type": "string" },
+        "authorityId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "description", "creatorId", "createdAt", "status"]
+    },
+    "Authority": {
+      "title": "Authority",
+      "description": "Local official or department",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "department": { "type": "string" },
+        "location": { "type": "string" },
+        "trustScore": { "type": "number" },
+        "bio": { "type": "string" },
+        "email": { "type": "string" },
+        "whatsapp": { "type": "string" }
+      },
+      "required": ["name", "department", "location"]
+    },
+    "Support": {
+      "title": "Support",
+      "description": "User support for a report",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "reportId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "reportId", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles"
+    },
+    "/reports/{reportId}": {
+      "schema": "Report",
+      "description": "Community issue reports"
+    },
+    "/authorities/{authorityId}": {
+      "schema": "Authority",
+      "description": "Local authorities"
+    },
+    "/reports/{reportId}/supports/{supportId}": {
+      "schema": "Support",
+      "description": "Supports for a specific report"
+    }
+  }
+}

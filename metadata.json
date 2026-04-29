@@ -1,0 +1,14 @@
+{
+  "name": "CivicPulse",
+  "description": "CivicPulse bridges voter education with community problem-solving through AI-powered escalation and multilingual support.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "geolocation"
+  ],
+  "majorCapabilities": [
+    "AI-powered escalation",
+    "Multilingual support",
+    "Community issue tracking"
+  ]
+}
